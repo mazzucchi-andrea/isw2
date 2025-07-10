@@ -25,6 +25,7 @@
         <weka.version>3.8.6</weka.version>
         <ck.version>0.7.0</ck.version>
         <pmd.version>6.55.0</pmd.version>
+        <kong.version>3.14.5</kong.version>
     </properties>
 
     <dependencies>
@@ -74,6 +75,12 @@
             <groupId>nz.ac.waikato.cms.weka</groupId>
             <artifactId>weka-stable</artifactId>
             <version>${weka.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.konghq</groupId>
+            <artifactId>unirest-java</artifactId>
+            <version>${kong.version}</version>
         </dependency>
 
         <dependency>
