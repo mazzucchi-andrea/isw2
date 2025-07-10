@@ -10,10 +10,6 @@ import it.mazz.isw2.entities.Features;
 import it.mazz.isw2.entities.Ticket;
 import it.mazz.isw2.entities.Version;
 import net.sourceforge.pmd.*;
-import net.sourceforge.pmd.renderers.Renderer;
-import net.sourceforge.pmd.renderers.TextRenderer;
-import net.sourceforge.pmd.util.datasource.DataSource;
-import net.sourceforge.pmd.util.datasource.FileDataSource;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -33,8 +29,6 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.StringWriter;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -455,37 +449,19 @@ public class DatasetGenerator {
 
     public int getSmells(File f, String methodName) {
         int smells = 0;
-        try {
-            PMDConfiguration config = new PMDConfiguration();
-            List<String> ruleSets = new ArrayList<>();
-            URL url = this.getClass().getClassLoader().getResources("rules.xml").nextElement();
-            ruleSets.add(url.getPath());
-            config.setInputFilePath(f.toPath());
-            config.setRuleSets(ruleSets);
-            config.setIgnoreIncrementalAnalysis(true);
-            try (StringWriter reportOutput = new StringWriter()) {
-                Renderer renderer = new TextRenderer();
-                renderer.setWriter(reportOutput);
-                renderer.start();
-
-                DataSource dataSource = new FileDataSource(f);
-                List<DataSource> files = Collections.singletonList(dataSource);
-                RuleSetFactory ruleSetFactory = new RuleSetFactory();
-                RuleContext ruleContext = new RuleContext();
-                PMD.processFiles(config, ruleSetFactory, files, ruleContext, Collections.singletonList(renderer));
-
-                renderer.end();
-                renderer.flush();
-                renderer.getWriter().close();
-                Report report = ruleContext.getReport();
-                for (RuleViolation violation : report) {
-                    if (methodName.equals(violation.getMethodName())) {
-                        smells++;
-                    }
+        PMDConfiguration config = new PMDConfiguration();
+        config.setMinimumPriority(RulePriority.LOW);
+        config.addRuleSet("rulesets/java/quickstart.xml");
+        config.setIgnoreIncrementalAnalysis(true);
+        try (PmdAnalysis pmd = PmdAnalysis.create(config)) {
+            pmd.addRuleSet(pmd.newRuleSetLoader().loadFromResource("rules.xml"));
+            pmd.files().addFile(f.toPath());
+            Report report = pmd.performAnalysisAndCollectReport();
+            for (RuleViolation violation : report) {
+                if (methodName.equals(violation.getMethodName())) {
+                    smells++;
                 }
             }
-        } catch (IOException e) {
-            return -1;
         }
         return smells;
     }
