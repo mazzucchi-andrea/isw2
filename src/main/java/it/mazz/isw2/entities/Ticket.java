@@ -26,30 +26,6 @@ public class Ticket {
         return openingVersion;
     }
 
-    public void setOpeningVersion(List<Version> versions) {
-        if (this.affectedVersions.size() > 1) {
-            for (int i = this.affectedVersions.size() - 1; i >= 0; i--) {
-                if (this.affectedVersions.get(i).getReleaseDate() != null &&
-                        this.created.getTime() > this.affectedVersions.get(i).getReleaseDate().getTime()) {
-                    this.openingVersion = this.affectedVersions.get(i);
-                    break;
-                }
-            }
-        } else if (openingVersion == null) {
-            this.affectedVersions = new LinkedList<>();
-            for (int j = 0; j < versions.size(); j++) {
-                if (versions.get(j).getReleaseDate() != null &&
-                        j + 1 < versions.size() &&
-                        versions.get(j + 1).getReleaseDate() != null &&
-                        this.created.getTime() > versions.get(j).getReleaseDate().getTime() &&
-                        this.created.getTime() < versions.get(j + 1).getReleaseDate().getTime()) {
-                    this.openingVersion = versions.get(j);
-                    break;
-                }
-            }
-        }
-    }
-
     public void setOpeningVersion(Version openingVersion) {
         this.openingVersion = openingVersion;
     }
@@ -102,21 +78,7 @@ public class Ticket {
         this.commits.add(commit);
     }
 
-    public boolean consistencyCheckAffectedVersion() {
-        if (affectedVersions.isEmpty()) {
-            return false;
-        } else if (fixedVersion == null) {
-            return false;
-        } else
-            return affectedVersions.get(affectedVersions.size() - 1).getIncremental() <= fixedVersion.getIncremental();
-    }
-
     public void addAffectedVersion(Version version) {
         this.affectedVersions.add(version);
     }
-
-    public void addAffectedVersion(List<Version> version) {
-        this.affectedVersions.addAll(version);
-    }
-
 }

@@ -18,17 +18,18 @@ public class Main {
     }
 
     public static void main(String[] args) {
-        if (args.length < 1) {
-            LOGGER.error("project is mandatory");
+        if (args.length < 2) {
+            LOGGER.error("project and versions portion is mandatory");
             return;
         }
         String projName = args[0];
+        Double percent = Double.parseDouble(args[1]);
         try {
-            String skipDatasetGeneration = args[1];
+            String skipDatasetGeneration = args[2];
             if (!skipDatasetGeneration.equals("-skip"))
-                DatasetGenerator.getInstance().generateDataset(projName);
+                DatasetGenerator.getInstance().generateDataset(projName, percent);
         } catch (ArrayIndexOutOfBoundsException ignore) {
-            DatasetGenerator.getInstance().generateDataset(projName);
+            DatasetGenerator.getInstance().generateDataset(projName, percent);
         }
 
         Analysis.getInstance().analyzeDataset(projName);

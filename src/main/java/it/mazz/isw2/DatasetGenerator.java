@@ -9,7 +9,10 @@ import it.mazz.isw2.entities.Commit;
 import it.mazz.isw2.entities.Features;
 import it.mazz.isw2.entities.Ticket;
 import it.mazz.isw2.entities.Version;
-import net.sourceforge.pmd.*;
+import net.sourceforge.pmd.PMDConfiguration;
+import net.sourceforge.pmd.PmdAnalysis;
+import net.sourceforge.pmd.Report;
+import net.sourceforge.pmd.RuleViolation;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -30,6 +33,9 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -49,7 +55,7 @@ public class DatasetGenerator {
         return instance;
     }
 
-    public void generateDataset(String projName) {
+    public void generateDataset(String projName, Double percent) {
         LOGGER.info("Project: {}", projName);
 
         LOGGER.info("Delete previous results");
@@ -89,11 +95,24 @@ public class DatasetGenerator {
         TicketsHandler.addCommitToTickets(commits);
         LOGGER.info("Ticket list new size: {}", TicketsHandler.getTicketsSize());
 
-        LOGGER.info("Retrieving all method features for the first 33% of versions");
-        List<Features> featuresList = getAllFeatures(projName, git, VersionsHandler.getOlderVersions(), TicketsHandler.getTickets());
-        LOGGER.info("Features list size: {}", featuresList.size());
+        LOGGER.info("Retrieving all method features for the first {}% of versions", percent * 100);
+        List<Features> features = getAllFeatures(projName, git, VersionsHandler.getOlderVersions(percent), TicketsHandler.getTickets());
+        if (features.isEmpty()) {
+            LOGGER.error("No features found");
+            return;
+        }
+        LOGGER.info("Features list size: {}", features.size());
 
-        createDatasets(projName, featuresList);
+        String dirPath = String.format("./output/%s/", projName);
+        try {
+            Path path = Paths.get(dirPath);
+            Files.createDirectories(path);
+        } catch (IOException e) {
+            LOGGER.error(e.getMessage());
+            return;
+        }
+
+        createDatasets(projName, features);
 
         if (repo.exists()) {
             try {
@@ -169,20 +188,18 @@ public class DatasetGenerator {
     }
 
     private List<Features> getAllFeatures(String projName, Git git, List<Version> versions, List<Ticket> tickets) {
-        List<Features> featuresList = new ArrayList<>();
+        List<Features> featuresList = new LinkedList<>();
         for (Version version : versions) {
             try {
                 git.checkout().setName(version.getSha()).setCreateBranch(false).call();
             } catch (GitAPIException e) {
                 LOGGER.warn(e.getMessage());
-                continue;
+                return Collections.emptyList();
             }
             List<File> files = new ArrayList<>();
             Util.getInstance().listFiles("./" + projName.toLowerCase(), files);
             for (File f : files) {
                 boolean java = Pattern.compile(Pattern.quote(".java"),
-                        Pattern.CASE_INSENSITIVE).matcher(f.getName()).find();
-                boolean testName = Pattern.compile(Pattern.quote("test"),
                         Pattern.CASE_INSENSITIVE).matcher(f.getName()).find();
                 boolean testPath = Pattern.compile(Pattern.quote("test"),
                         Pattern.CASE_INSENSITIVE).matcher(f.getPath()).find();
@@ -190,8 +207,7 @@ public class DatasetGenerator {
                         Pattern.CASE_INSENSITIVE).matcher(f.getPath()).find();
                 boolean benchmarkPath = Pattern.compile(Pattern.quote("benchmark"),
                         Pattern.CASE_INSENSITIVE).matcher(f.getPath()).find();
-                if (!java || testName || testPath || exampleName || benchmarkPath) continue;
-                LOGGER.debug("Get method features from {} (version {})", f.getName(), version.getIncremental());
+                if (!java || testPath || exampleName || benchmarkPath) continue;
                 featuresList.addAll(getFeatures(f, version, projName, tickets, git));
             }
         }
@@ -215,7 +231,7 @@ public class DatasetGenerator {
                 "@attribute buggy {yes,no}\n\n" +
                 "@data\n";
 
-        String header = "Version,fileName,methodName,nAuth,methodHistories,loc,fain,fanout,wmc,returns,loops," +
+        String header = "#,Version,fileName,methodName,nAuth,methodHistories,loc,fain,fanout,wmc,returns,loops," +
                 "comparison,maxNested,math,smells,buggy\n";
 
         File arffDataset = new File(String.format("./output/%s/%s-dataset.arff/", projName, projName));
@@ -226,6 +242,7 @@ public class DatasetGenerator {
             LOGGER.error(e.getMessage());
             return;
         }
+
         File csvDataset = new File(String.format("./output/%s/%s-dataset.csv/", projName, projName));
         try (FileWriter outputFile = new FileWriter(csvDataset)) {
             outputFile.write(header);
@@ -266,13 +283,20 @@ public class DatasetGenerator {
                 LOGGER.error("Error CK calculation in {}", sourceFilePath);
             }
         });
+        PMDConfiguration config = new PMDConfiguration();
+        config.setIgnoreIncrementalAnalysis(true);
+        List<RuleViolation> violations;
+        try (PmdAnalysis pmd = PmdAnalysis.create(config)) {
+            pmd.addRuleSet(pmd.newRuleSetLoader().loadFromResource("rules.xml"));
+            pmd.files().addFile(f.toPath());
+            Report report = pmd.performAnalysisAndCollectReport();
+            violations = report.getViolations();
+        }
         List<Features> methodsFeatures = new ArrayList<>();
         try {
             for (CKMethodResult methodResult : results.values().iterator().next().getMethods()) {
-                LOGGER.debug("Get features for method {} (version {})", methodResult.getMethodName(), version.getIncremental());
-                Features features = new Features(version.getIncremental(), (String) results.keySet().toArray()[0], methodResult);
-                features.setSmells(getSmells(f, features.getMethodName()));
-                int nAuth = 0;
+                Features features = new Features(version, f.getName(), methodResult);
+                features.setSmells(getSmells(violations, features.getMethodName()));
                 int histories = 0;
                 String path = f.getPath().substring(f.getPath().indexOf(projName.toLowerCase()) + projName.length() + 1);
                 try (Repository repository = git.getRepository()) {
@@ -280,15 +304,14 @@ public class DatasetGenerator {
                         if (commit.isFileInCommit(path)) {
                             boolean modified = isMethodModified(repository, commit.getSha(), features.getMethodName(), path);
                             if (modified) {
-                                nAuth++;
+                                features.addAuthor(commit.getAuthor());
                                 histories++;
                             }
                         }
                     }
-                    features.setBuggy(isMethodBuggy(repository, tickets, version, path, features.getMethodName(), path));
                     features.setMethodHistories(histories);
+                    features.setBuggy(isMethodBuggy(repository, tickets, version, path, features.getMethodName(), path));
                     methodsFeatures.add(features);
-                    features.setnAuth(nAuth);
                 }
             }
         } catch (NoSuchElementException | IOException e) {
@@ -329,19 +352,26 @@ public class DatasetGenerator {
                 String fileContentNew = getFileContent(repository, commit, currentFilePath);
                 if (entry.getChangeType() == DiffEntry.ChangeType.ADD) {
                     modified = extractMethodBody(fileContentNew, methodName).isPresent();
+                    if (modified) {
+                        return true;
+                    }
                 }
                 String fileContentOld = getFileContent(repository, parentCommit, oldFilePath);
                 if (entry.getChangeType() == DiffEntry.ChangeType.MODIFY ||
                         entry.getChangeType() == DiffEntry.ChangeType.RENAME) {
                     modified = compareMethodBody(methodName, fileContentNew, fileContentOld);
+                    if (modified) {
+                        return true;
+                    }
                 }
                 if (entry.getChangeType() == DiffEntry.ChangeType.DELETE) {
                     // If the file was deleted and contained the method, the method is "modified" (removed).
                     modified = extractMethodBody(fileContentOld, methodName).isPresent();
+                    if (modified) {
+                        return true;
+                    }
                 }
-                if (modified) {
-                    return true;
-                }
+
             }
         }
         return false;
@@ -447,20 +477,11 @@ public class DatasetGenerator {
         return null;
     }
 
-    public int getSmells(File f, String methodName) {
+    public int getSmells(List<RuleViolation> violations, String methodName) {
         int smells = 0;
-        PMDConfiguration config = new PMDConfiguration();
-        config.setMinimumPriority(RulePriority.LOW);
-        config.addRuleSet("rulesets/java/quickstart.xml");
-        config.setIgnoreIncrementalAnalysis(true);
-        try (PmdAnalysis pmd = PmdAnalysis.create(config)) {
-            pmd.addRuleSet(pmd.newRuleSetLoader().loadFromResource("rules.xml"));
-            pmd.files().addFile(f.toPath());
-            Report report = pmd.performAnalysisAndCollectReport();
-            for (RuleViolation violation : report) {
-                if (methodName.equals(violation.getMethodName())) {
-                    smells++;
-                }
+        for(RuleViolation violation : violations) {
+            if (methodName.equals(violation.getMethodName())) {
+                smells++;
             }
         }
         return smells;

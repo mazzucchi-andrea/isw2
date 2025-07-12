@@ -1,12 +1,17 @@
 package it.mazz.isw2.entities;
 
 import com.github.mauricioaniche.ck.CKMethodResult;
+import org.eclipse.jgit.lib.PersonIdent;
+
+import java.util.HashSet;
+import java.util.Set;
 
 public class Features {
-    private final Integer version;
+    private final Integer versionIncremental;
+    private final String versionName;
     private final String methodName;
     private final String fileName;
-    private Integer nAuth;
+    private Set<PersonIdent> authors = new HashSet<>();
     private Integer methodHistories;
     private Integer loc;
     private Integer fain;
@@ -20,8 +25,9 @@ public class Features {
     private Integer smells;
     private boolean buggy;
 
-    public Features(Integer version, String fileName, CKMethodResult ckMethodResult) {
-        this.version = version;
+    public Features(Version version, String fileName, CKMethodResult ckMethodResult) {
+        this.versionIncremental = version.getIncremental();
+        this.versionName = version.getName();
         this.fileName = fileName;
         if (ckMethodResult.getMethodName().indexOf('/') != -1) {
             this.methodName = ckMethodResult.getMethodName().substring(0, ckMethodResult.getMethodName().indexOf('/'));
@@ -41,24 +47,12 @@ public class Features {
         this.buggy = false;
     }
 
-    public Integer getVersion() {
-        return version;
-    }
-
     public String getMethodName() {
         return methodName;
     }
 
-    public String getFileName() {
-        return fileName;
-    }
-
-    public Integer getnAuth() {
-        return nAuth;
-    }
-
-    public void setnAuth(Integer nAuth) {
-        this.nAuth = nAuth;
+    public void addAuthor(PersonIdent author) {
+        authors.add(author);
     }
 
     public Integer getMethodHistories() {
@@ -149,11 +143,11 @@ public class Features {
         this.smells = smells;
     }
 
-    public Boolean isBuggy() {
+    public boolean isBuggy() {
         return buggy;
     }
 
-    public void setBuggy(Boolean buggy) {
+    public void setBuggy(boolean buggy) {
         this.buggy = buggy;
     }
 
@@ -165,12 +159,13 @@ public class Features {
             bugginess = "no";
         }
         return new String[]{
-                version.toString(),
+                versionIncremental.toString(),
+                versionName,
                 fileName,
                 methodName,
-                loc.toString(),
-                nAuth.toString(),
+                Integer.toString(authors.size()),
                 methodHistories.toString(),
+                loc.toString(),
                 fain.toString(),
                 fanout.toString(),
                 wmc.toString(),
@@ -191,7 +186,7 @@ public class Features {
             bugginess = "no";
         }
         return new String[]{
-                nAuth.toString(),
+                Integer.toString(authors.size()),
                 methodHistories.toString(),
                 loc.toString(),
                 fain.toString(),

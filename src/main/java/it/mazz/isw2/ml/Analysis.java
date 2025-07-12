@@ -3,6 +3,7 @@ package it.mazz.isw2.ml;
 import com.opencsv.CSVWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import weka.attributeSelection.CorrelationAttributeEval;
 import weka.classifiers.Classifier;
 import weka.classifiers.Evaluation;
 import weka.classifiers.bayes.NaiveBayes;
@@ -14,6 +15,8 @@ import weka.core.converters.ConverterUtils.DataSource;
 
 import java.io.File;
 import java.io.FileWriter;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Analysis {
     private static final Logger LOGGER = LoggerFactory.getLogger(Analysis.class);
@@ -35,45 +38,64 @@ public class Analysis {
         String datasetPath = String.format("./output/%s/%s-dataset.arff", projName, projName);
 
         File analysisResults = new File(String.format("./output/%s/%s-results.csv", projName, projName));
-        String header = "dataset,classifier,TP,FP,TN,FN,Precision,Recall,AUC,Kappa\n";
+        String header = "dataset,classifier,TP,FP,TN,FN,Precision,Recall,AUC,F1,Kappa\n";
 
         String[] classifiers = {RANDOM_FOREST, NAIVE_BAYES, IBK};
+
+        DataSource source;
+        Instances data;
+        try {
+            source = new DataSource(datasetPath);
+            data = source.getDataSet();
+        } catch (Exception e) {
+            LOGGER.error("Error loading data source", e);
+            return;
+        }
+
+        if (data.classIndex() == -1)
+            data.setClassIndex(data.numAttributes() - 1);
 
         try (FileWriter outputFile = new FileWriter(analysisResults)) {
             outputFile.write(header);
             try (CSVWriter writer = new CSVWriter(outputFile)) {
                 for (String classifierName : classifiers) {
                     LOGGER.info("Starting analysis with {}", classifierName);
-
-                    Classifier c = getClassifier(classifierName);
-
-                    analyze(projName, c, classifierName, datasetPath, writer);
+                    analyze(projName, classifierName, data, writer);
                 }
             }
         } catch (Exception e) {
             LOGGER.warn(e.getMessage());
         }
+
+        CorrelationAttributeEval corrEval = new CorrelationAttributeEval();
+        try {
+            corrEval.buildEvaluator(data);
+            Map<String, Double> actionableRanking = new HashMap<>();
+            for (int i = 3; i < data.numAttributes() - 1; i++) {
+                actionableRanking.put(data.attribute(i).name(), corrEval.evaluateAttribute(i));
+            }
+            LOGGER.info("Actionable ranking: {}", actionableRanking);
+        } catch (Exception e) {
+            LOGGER.error("Error building evaluator", e);
+        }
     }
 
-    private void analyze(String projName, Classifier classifier, String classifierName, String datasetPath,
+    private void analyze(String projName, String classifierName, Instances data,
                          CSVWriter writer) throws Exception {
-
-        DataSource source = new DataSource(datasetPath);
-        Instances data = source.getDataSet();
-
-        if (data.classIndex() == -1)
-            data.setClassIndex(data.numAttributes() - 1);
-
+        Classifier classifier = getClassifier(classifierName);
         Evaluation eval = new Evaluation(data);
         eval.crossValidateModel(classifier, data, 10, new Debug.Random(42));
 
         String[] line = {
                 projName,
                 classifierName,
-                Double.toString(eval.numTruePositives(1)), Double.toString(eval.numFalsePositives(1)),
-                Double.toString(eval.numTrueNegatives(1)), Double.toString(eval.numFalseNegatives(1)),
-                Double.toString(eval.precision(1)), Double.toString(eval.recall(1)),
-                Double.toString(eval.areaUnderROC(1)), Double.toString(eval.kappa())};
+                Double.toString(eval.weightedTruePositiveRate()), Double.toString(eval.weightedFalsePositiveRate()),
+                Double.toString(eval.weightedTrueNegativeRate()), Double.toString(eval.weightedFalseNegativeRate()),
+                Double.toString(eval.weightedPrecision()),
+                Double.toString(eval.weightedRecall()),
+                Double.toString(eval.weightedAreaUnderROC()),
+                Double.toString(eval.weightedFMeasure()),
+                Double.toString(eval.kappa())};
 
         writer.writeNext(line);
     }

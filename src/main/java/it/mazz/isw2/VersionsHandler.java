@@ -139,10 +139,10 @@ public class VersionsHandler {
         return false;
     }
 
-    public static List<Version> getOlderVersions() {
+    public static List<Version> getOlderVersions(double p) {
         List<Version> versionsSplit = new ArrayList<>();
         int size = versions.size();
-        int toMaintain = (int) (size * 0.33D);
+        int toMaintain = (int) (size * p);
         for (Version version : versions) {
             if (versionsSplit.size() < toMaintain) {
                 versionsSplit.add(version);
