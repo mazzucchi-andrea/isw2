@@ -352,26 +352,18 @@ public class DatasetGenerator {
                 String fileContentNew = getFileContent(repository, commit, currentFilePath);
                 if (entry.getChangeType() == DiffEntry.ChangeType.ADD) {
                     modified = extractMethodBody(fileContentNew, methodName).isPresent();
-                    if (modified) {
-                        return true;
-                    }
                 }
                 String fileContentOld = getFileContent(repository, parentCommit, oldFilePath);
                 if (entry.getChangeType() == DiffEntry.ChangeType.MODIFY ||
                         entry.getChangeType() == DiffEntry.ChangeType.RENAME) {
                     modified = compareMethodBody(methodName, fileContentNew, fileContentOld);
-                    if (modified) {
-                        return true;
-                    }
-                }
-                if (entry.getChangeType() == DiffEntry.ChangeType.DELETE) {
+                } else if (entry.getChangeType() == DiffEntry.ChangeType.DELETE) {
                     // If the file was deleted and contained the method, the method is "modified" (removed).
                     modified = extractMethodBody(fileContentOld, methodName).isPresent();
-                    if (modified) {
-                        return true;
-                    }
                 }
-
+                if (modified) {
+                    return true;
+                }
             }
         }
         return false;
@@ -479,7 +471,7 @@ public class DatasetGenerator {
 
     public int getSmells(List<RuleViolation> violations, String methodName) {
         int smells = 0;
-        for(RuleViolation violation : violations) {
+        for (RuleViolation violation : violations) {
             if (methodName.equals(violation.getMethodName())) {
                 smells++;
             }
