@@ -103,10 +103,14 @@ public class DatasetGenerator {
         }
         LOGGER.info("Features list size: {}", features.size());
 
-        String dirPath = String.format("./output/%s/", projName);
+        String dirPathArff = String.format("./output/%s/arff", projName);
+        String dirPathCSV = String.format("./output/%s/csv", projName);
+
         try {
-            Path path = Paths.get(dirPath);
-            Files.createDirectories(path);
+            Path pathArff = Paths.get(dirPathArff);
+            Path pathCSV = Paths.get(dirPathCSV);
+            Files.createDirectories(pathArff);
+            Files.createDirectories(pathCSV);
         } catch (IOException e) {
             LOGGER.error(e.getMessage());
             return;
@@ -234,7 +238,7 @@ public class DatasetGenerator {
         String header = "#,Version,fileName,methodName,nAuth,methodHistories,loc,fain,fanout,wmc,returns,loops," +
                 "comparison,maxNested,math,smells,buggy\n";
 
-        File arffDataset = new File(String.format("./output/%s/%s-dataset.arff/", projName, projName));
+        File arffDataset = new File(String.format("./output/%s/arff/%s-datasetA.arff/", projName, projName));
         try (FileWriter outputFile = new FileWriter(arffDataset)) {
             outputFile.write(arffHeader);
             writeARFFDataset(outputFile, featuresList);
@@ -243,7 +247,7 @@ public class DatasetGenerator {
             return;
         }
 
-        File csvDataset = new File(String.format("./output/%s/%s-dataset.csv/", projName, projName));
+        File csvDataset = new File(String.format("./output/%s/csv/%s-datasetA.csv/", projName, projName));
         try (FileWriter outputFile = new FileWriter(csvDataset)) {
             outputFile.write(header);
             writeCSVDataset(outputFile, featuresList);
@@ -317,7 +321,21 @@ public class DatasetGenerator {
         } catch (NoSuchElementException | IOException e) {
             return Collections.emptyList();
         }
+        for (Features features : methodsFeatures) {
+            if (!features.isBuggy()) {
+                features.setBuggy(isBuggyMethodCalled(features, methodsFeatures));
+            }
+        }
         return methodsFeatures;
+    }
+
+    boolean isBuggyMethodCalled(Features features, List<Features> methodsFeatures) {
+        for (Features f : methodsFeatures) {
+            if (f.isBuggy() && features.isInvocated(f.getQualifiedMethodName())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     boolean isMethodBuggy(Repository repository, List<Ticket> tickets, Version version, String path, String methodName, String filePath) throws IOException {

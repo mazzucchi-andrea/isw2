@@ -35,7 +35,7 @@ public class Analysis {
     }
 
     public void analyzeDataset(String projName) {
-        String datasetPath = String.format("./output/%s/%s-dataset.arff", projName, projName);
+        String datasetPath = String.format("./output/%s/arff/%s-datasetA.arff", projName, projName);
 
         File analysisResults = new File(String.format("./output/%s/%s-results.csv", projName, projName));
         String header = "dataset,classifier,TP,FP,TN,FN,Precision,Recall,AUC,F1,Kappa\n";

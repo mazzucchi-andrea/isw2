@@ -1,6 +1,7 @@
 package it.mazz.isw2;
 
 import it.mazz.isw2.ml.Analysis;
+import it.mazz.isw2.ml.ModifiedDatasetsAnalysis;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -19,19 +20,32 @@ public class Main {
 
     public static void main(String[] args) {
         if (args.length < 2) {
-            LOGGER.error("project and versions portion is mandatory");
+            LOGGER.error("Operation and project are mandatory");
             return;
         }
-        String projName = args[0];
-        Double percent = Double.parseDouble(args[1]);
-        try {
-            String skipDatasetGeneration = args[2];
-            if (!skipDatasetGeneration.equals("-skip"))
-                DatasetGenerator.getInstance().generateDataset(projName, percent);
-        } catch (ArrayIndexOutOfBoundsException ignore) {
-            DatasetGenerator.getInstance().generateDataset(projName, percent);
+
+        String projName = args[1];
+        if (!(projName.equals("BOOKKEEPER") || projName.equals("OPENJPA"))) {
+            LOGGER.error("Invalid project");
+            return;
         }
 
-        Analysis.getInstance().analyzeDataset(projName);
+        switch (args[0]) {
+            case "Dataset" -> {
+                Double percent = Double.parseDouble(args[2]);
+                DatasetGenerator.getInstance().generateDataset(projName, percent);
+            }
+
+            case "Analysis" -> Analysis.getInstance().analyzeDataset(projName);
+
+            case "ModifiedDatasets" -> ModifiedDatasetsGenerator.getInstance().generateDatasets(projName);
+
+            case "ModifiedAnalysis" -> {
+                String classifierName = args[2];
+                ModifiedDatasetsAnalysis.getInstance().analyzeDatasets(projName, classifierName);
+            }
+
+            default -> throw new IllegalStateException("Unexpected value: " + args[0]);
+        }
     }
 }

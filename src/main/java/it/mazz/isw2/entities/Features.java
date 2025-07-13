@@ -10,8 +10,10 @@ public class Features {
     private final Integer versionIncremental;
     private final String versionName;
     private final String methodName;
+    private String qualifiedMethodName;
+    private Set<String> methodInvocations;
     private final String fileName;
-    private Set<PersonIdent> authors = new HashSet<>();
+    private final Set<PersonIdent> authors = new HashSet<>();
     private Integer methodHistories;
     private Integer loc;
     private Integer fain;
@@ -34,6 +36,8 @@ public class Features {
         } else {
             this.methodName = ckMethodResult.getMethodName();
         }
+        this.qualifiedMethodName = ckMethodResult.getQualifiedMethodName();
+        this.methodInvocations = ckMethodResult.getMethodInvocations();
         this.loc = ckMethodResult.getLoc();
         this.fain = ckMethodResult.getFanin();
         this.fanout = ckMethodResult.getFanout();
@@ -47,8 +51,38 @@ public class Features {
         this.buggy = false;
     }
 
+    public Features(String[] line) {
+        this.versionIncremental = Integer.valueOf(line[0]);
+        this.versionName = line[1];
+        this.fileName = line[2];
+        this.methodName = line[3];
+        for (int i = 0; i < Integer.parseInt(line[4]); i++) {
+            this.authors.add(new PersonIdent(String.format("%d",i), String.format("%d",i)));
+        }
+        this.methodHistories = Integer.valueOf(line[5]);
+        this.loc = Integer.valueOf(line[6]);
+        this.fain = Integer.valueOf(line[7]);
+        this.fanout = Integer.valueOf(line[8]);
+        this.wmc = Integer.valueOf(line[9]);
+        this.returns = Integer.valueOf(line[10]);
+        this.loops = Integer.valueOf(line[11]);
+        this.comparison = Integer.valueOf(line[12]);
+        this.maxNested = Integer.valueOf(line[13]);
+        this.math = Integer.valueOf(line[14]);
+        this.smells = Integer.valueOf(line[15]);
+        this.buggy = !line[16].equals("no");
+    }
+
     public String getMethodName() {
         return methodName;
+    }
+
+    public String getQualifiedMethodName() {
+        return qualifiedMethodName;
+    }
+
+    public boolean isInvocated(String methodName) {
+        return methodInvocations.contains(methodName);
     }
 
     public void addAuthor(PersonIdent author) {
