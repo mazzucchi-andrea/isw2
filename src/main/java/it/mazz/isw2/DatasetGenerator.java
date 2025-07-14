@@ -321,11 +321,6 @@ public class DatasetGenerator {
         } catch (NoSuchElementException | IOException e) {
             return Collections.emptyList();
         }
-//        for (Features features : methodsFeatures) {
-//            if (!features.isBuggy()) {
-//                features.setBuggy(isBuggyMethodCalled(features, methodsFeatures));
-//            }
-//        }
         return methodsFeatures;
     }
 

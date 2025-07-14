@@ -8,22 +8,19 @@ import com.opencsv.CSVReader;
 import com.opencsv.CSVWriter;
 import com.opencsv.exceptions.CsvValidationException;
 import it.mazz.isw2.Util;
-import it.mazz.isw2.entities.Commit;
 import it.mazz.isw2.entities.Features;
 import net.sourceforge.pmd.PMDConfiguration;
 import net.sourceforge.pmd.PmdAnalysis;
 import net.sourceforge.pmd.Report;
 import net.sourceforge.pmd.RuleViolation;
 import org.eclipse.jgit.lib.PersonIdent;
-import org.eclipse.jgit.lib.Repository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import weka.classifiers.Classifier;
-import weka.classifiers.Evaluation;
 import weka.classifiers.bayes.NaiveBayes;
 import weka.classifiers.lazy.IBk;
 import weka.classifiers.trees.RandomForest;
-import weka.core.*;
+import weka.core.Instances;
 import weka.core.converters.ConverterUtils.DataSource;
 
 import java.io.File;
@@ -51,7 +48,7 @@ public class RefactorAnalysis {
 
     public void analyze(String projName, String methodName, int version, String classifierName) {
         Classifier classifier = getClassifier(classifierName);
-        if  (classifier == null) {
+        if (classifier == null) {
             LOGGER.error("Classifier not found");
             return;
         }
@@ -62,13 +59,20 @@ public class RefactorAnalysis {
         List<File> originalFiles = new ArrayList<>();
         Util.getInstance().listFiles(String.format("./original/%s/", projName), originalFiles);
         Features originalFeatures = getOriginalFeatures(projName, originalFiles.get(0).getName(), methodName, version);
-
+        if (originalFeatures == null) {
+            LOGGER.error("Refactored features not found");
+            return;
+        }
         List<File> refactoredFiles = new ArrayList<>();
         Util.getInstance().listFiles(String.format("./refactored/%s/", projName), refactoredFiles);
         Features refactoredFeatures = getFeatures(refactoredFiles.get(0), methodName);
+        if (refactoredFeatures == null) {
+            LOGGER.error("Refactored features not found");
+            return;
+        }
         refactoredFeatures.setMethodHistories(originalFeatures.getMethodHistories());
         for (int i = 0; i < originalFeatures.getAuthorSize(); i++) {
-            refactoredFeatures.addAuthor(new PersonIdent(String.format("%d",i), String.format("%d",i)));
+            refactoredFeatures.addAuthor(new PersonIdent(String.format("%d", i), String.format("%d", i)));
         }
         refactoredFeatures.setBuggy(originalFeatures.isBuggy());
         List<Features> features = new ArrayList<>();
@@ -76,11 +80,16 @@ public class RefactorAnalysis {
         features.add(refactoredFeatures);
         createDatasets(projName, features);
         Instances instances = getInstances(String.format("./output/%s/arff/%s-refactored.arff", projName, projName));
+        if (instances == null) {
+            LOGGER.error("Instances not found");
+            return;
+        }
         try {
             double result = classifier.classifyInstance(instances.get(0));
             LOGGER.info("Classification original is: {}", result);
         } catch (Exception e) {
             LOGGER.error(e.getMessage());
+            return;
         }
         try {
             double result = classifier.classifyInstance(instances.get(1));
@@ -113,7 +122,6 @@ public class RefactorAnalysis {
             writeARFFDataset(outputFile, featuresList);
         } catch (IOException e) {
             LOGGER.error(e.getMessage());
-            return;
         }
 
     }

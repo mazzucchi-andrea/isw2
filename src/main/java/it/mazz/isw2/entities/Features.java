@@ -7,13 +7,13 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class Features {
-    private Integer versionIncremental;
-    private String versionName;
     private final String methodName;
-    private String qualifiedMethodName;
-    private Set<String> methodInvocations;
     private final String fileName;
     private final Set<PersonIdent> authors = new HashSet<>();
+    private Integer versionIncremental;
+    private String versionName;
+    private String qualifiedMethodName;
+    private Set<String> methodInvocations;
     private Integer methodHistories;
     private Integer loc;
     private Integer fain;
@@ -57,7 +57,7 @@ public class Features {
         this.fileName = line[2];
         this.methodName = line[3];
         for (int i = 0; i < Integer.parseInt(line[4]); i++) {
-            this.authors.add(new PersonIdent(String.format("%d",i), String.format("%d",i)));
+            this.authors.add(new PersonIdent(String.format("%d", i), String.format("%d", i)));
         }
         this.methodHistories = Integer.valueOf(line[5]);
         this.loc = Integer.valueOf(line[6]);

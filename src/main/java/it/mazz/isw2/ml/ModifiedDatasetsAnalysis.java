@@ -8,7 +8,6 @@ import weka.classifiers.Evaluation;
 import weka.classifiers.bayes.NaiveBayes;
 import weka.classifiers.lazy.IBk;
 import weka.classifiers.trees.RandomForest;
-import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.converters.ConverterUtils.DataSource;
 
@@ -34,7 +33,7 @@ public class ModifiedDatasetsAnalysis {
 
     public void analyzeDatasets(String projName, String classifierName) {
         Classifier classifier = getClassifier(classifierName);
-        if  (classifier == null) {
+        if (classifier == null) {
             LOGGER.error("Classifier not found");
             return;
         }

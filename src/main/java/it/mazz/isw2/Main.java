@@ -39,7 +39,8 @@ public class Main {
 
             case "Analysis" -> Analysis.getInstance().analyzeDataset(projName);
 
-            case "RefactorAnalysis" -> RefactorAnalysis.getInstance().analyze(projName, args[2], Integer.parseInt(args[3]), args[4]);
+            case "RefactorAnalysis" ->
+                    RefactorAnalysis.getInstance().analyze(projName, args[2], Integer.parseInt(args[3]), args[4]);
 
             case "ModifiedDatasets" -> ModifiedDatasetsGenerator.getInstance().generateDatasets(projName);
 
