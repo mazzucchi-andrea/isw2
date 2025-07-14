@@ -106,7 +106,7 @@ public class TicketsHandler {
             ticket.setInjectedVersion(versions.get(iv));
         }
         for (Version version : versions) {
-            if (version.getIncremental() <= iv) continue;
+            if (version.getIncremental() < iv) continue;
             if (version.getIncremental() < fv) {
                 ticket.addAffectedVersion(version);
             }

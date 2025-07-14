@@ -2,6 +2,7 @@ package it.mazz.isw2;
 
 import it.mazz.isw2.ml.Analysis;
 import it.mazz.isw2.ml.ModifiedDatasetsAnalysis;
+import it.mazz.isw2.ml.RefactorAnalysis;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -37,6 +38,8 @@ public class Main {
             }
 
             case "Analysis" -> Analysis.getInstance().analyzeDataset(projName);
+
+            case "RefactorAnalysis" -> RefactorAnalysis.getInstance().analyze(projName, args[2], Integer.parseInt(args[3]), args[4]);
 
             case "ModifiedDatasets" -> ModifiedDatasetsGenerator.getInstance().generateDatasets(projName);
 

@@ -321,11 +321,11 @@ public class DatasetGenerator {
         } catch (NoSuchElementException | IOException e) {
             return Collections.emptyList();
         }
-        for (Features features : methodsFeatures) {
-            if (!features.isBuggy()) {
-                features.setBuggy(isBuggyMethodCalled(features, methodsFeatures));
-            }
-        }
+//        for (Features features : methodsFeatures) {
+//            if (!features.isBuggy()) {
+//                features.setBuggy(isBuggyMethodCalled(features, methodsFeatures));
+//            }
+//        }
         return methodsFeatures;
     }
 
@@ -338,7 +338,8 @@ public class DatasetGenerator {
         return false;
     }
 
-    boolean isMethodBuggy(Repository repository, List<Ticket> tickets, Version version, String path, String methodName, String filePath) throws IOException {
+    boolean isMethodBuggy(Repository repository, List<Ticket> tickets, Version version, String path, String methodName,
+                          String filePath) throws IOException {
         for (Ticket ticket : tickets) {
             for (Commit commit : ticket.getCommits()) {
                 if (commit.isFileInCommit(path) && ticket.getAffectedVersions().contains(version) &&

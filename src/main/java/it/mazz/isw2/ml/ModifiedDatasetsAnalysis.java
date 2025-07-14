@@ -8,6 +8,7 @@ import weka.classifiers.Evaluation;
 import weka.classifiers.bayes.NaiveBayes;
 import weka.classifiers.lazy.IBk;
 import weka.classifiers.trees.RandomForest;
+import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.converters.ConverterUtils.DataSource;
 
@@ -44,7 +45,7 @@ public class ModifiedDatasetsAnalysis {
 
         trainClassifier(classifier, datasetAPath);
 
-        String header = "dataset,TP,FP,TN,FN,Precision,Recall,AUC,F1,Kappa\n";
+        String header = "dataset,type,TP,FP,TN,FN,Precision,Recall,AUC,F1,MCC,Kappa\n";
 
         File analysisResults = new File(String.format("./output/%s/%s-datasets-results.csv", projName, projName));
         try (CSVWriter writer = new CSVWriter(new FileWriter(analysisResults))) {
@@ -65,16 +66,32 @@ public class ModifiedDatasetsAnalysis {
         }
         Evaluation eval = new Evaluation(data);
         eval.evaluateModel(classifier, data);
-        String[] line = {
+
+        String[] weighted = {
                 name,
+                "weighted",
                 Double.toString(eval.weightedTruePositiveRate()), Double.toString(eval.weightedFalsePositiveRate()),
                 Double.toString(eval.weightedTrueNegativeRate()), Double.toString(eval.weightedFalseNegativeRate()),
                 Double.toString(eval.weightedPrecision()),
                 Double.toString(eval.weightedRecall()),
                 Double.toString(eval.weightedAreaUnderROC()),
                 Double.toString(eval.weightedFMeasure()),
+                Double.toString(eval.weightedMatthewsCorrelation()),
                 Double.toString(eval.kappa())};
-        writer.writeNext(line);
+        writer.writeNext(weighted);
+
+        String[] classBuggy = {
+                name,
+                "Class Buggy",
+                Double.toString(eval.numTruePositives(0)), Double.toString(eval.numFalsePositives(0)),
+                Double.toString(eval.numTrueNegatives(0)), Double.toString(eval.numFalseNegatives(0)),
+                Double.toString(eval.precision(0)),
+                Double.toString(eval.recall(0)),
+                Double.toString(eval.areaUnderROC(0)),
+                Double.toString(eval.fMeasure(0)),
+                Double.toString(eval.matthewsCorrelationCoefficient(0)),
+                Double.toString(eval.kappa())};
+        writer.writeNext(classBuggy);
     }
 
     private Instances getInstances(String datasetPath) {

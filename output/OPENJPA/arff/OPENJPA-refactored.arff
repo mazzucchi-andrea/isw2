@@ -1,0 +1,19 @@
+@relation Refactored_OPENJPA
+
+@attribute nAuth numeric
+@attribute methodHistories numeric
+@attribute loc numeric
+@attribute fanin numeric
+@attribute fanout numeric
+@attribute wmc numeric
+@attribute returns numeric
+@attribute loops numeric
+@attribute comparison numeric
+@attribute maxNested numeric
+@attribute math numeric
+@attribute smells numeric
+@attribute buggy {yes,no}
+
+@data
+"1","1","120","0","2","70","1","2","16","5","0","140","yes"
+"1","1","12","0","4","1","1","0","0","0","0","19","yes"

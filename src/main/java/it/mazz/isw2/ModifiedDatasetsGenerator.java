@@ -55,9 +55,9 @@ public class ModifiedDatasetsGenerator {
 
     public void generateDatasets(String projName) {
         List<Features> featuresList = getFeatures(projName);
+        generateC(projName, featuresList);
         generateBplus(projName, featuresList);
         generateB(projName, featuresList);
-        generateC(projName, featuresList);
     }
 
     private List<Features> getFeatures(String projName) {

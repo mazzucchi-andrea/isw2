@@ -18,8 +18,8 @@
 
         <!-- versions -->
         <jgit.version>7.3.0.202506031305-r</jgit.version>
-        <json.version>20250107</json.version>
-        <log4j.version>2.25.0</log4j.version>
+        <json.version>20250517</json.version>
+        <log4j.version>2.25.1</log4j.version>
         <commons-io.version>2.19.0</commons-io.version>
         <opencsv.version>5.11.2</opencsv.version>
         <weka.version>3.8.6</weka.version>

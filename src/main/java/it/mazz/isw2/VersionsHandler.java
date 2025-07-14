@@ -116,7 +116,6 @@ public class VersionsHandler {
 
     public static void addCommitsToVersions(Repository repository, Git git) {
         try (RevWalk revWalk = new RevWalk(repository)) {
-
             for (Version version : versions) {
                 RevCommit releaseCommit = revWalk.parseCommit(repository.resolve(version.getSha()));
                 revWalk.markStart(releaseCommit);

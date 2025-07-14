@@ -38,7 +38,7 @@ public class Analysis {
         String datasetPath = String.format("./output/%s/arff/%s-datasetA.arff", projName, projName);
 
         File analysisResults = new File(String.format("./output/%s/%s-results.csv", projName, projName));
-        String header = "dataset,classifier,TP,FP,TN,FN,Precision,Recall,AUC,F1,Kappa\n";
+        String header = "dataset,classifier,type,TP,FP,TN,FN,Precision,Recall,AUC,F1,MCC,Kappa\n";
 
         String[] classifiers = {RANDOM_FOREST, NAIVE_BAYES, IBK};
 
@@ -86,18 +86,33 @@ public class Analysis {
         Evaluation eval = new Evaluation(data);
         eval.crossValidateModel(classifier, data, 10, new Debug.Random(42));
 
-        String[] line = {
+        String[] weighted = {
                 projName,
                 classifierName,
+                "weighted",
                 Double.toString(eval.weightedTruePositiveRate()), Double.toString(eval.weightedFalsePositiveRate()),
                 Double.toString(eval.weightedTrueNegativeRate()), Double.toString(eval.weightedFalseNegativeRate()),
                 Double.toString(eval.weightedPrecision()),
                 Double.toString(eval.weightedRecall()),
                 Double.toString(eval.weightedAreaUnderROC()),
                 Double.toString(eval.weightedFMeasure()),
+                Double.toString(eval.weightedMatthewsCorrelation()),
                 Double.toString(eval.kappa())};
+        writer.writeNext(weighted);
 
-        writer.writeNext(line);
+        String[] classBuggy = {
+                projName,
+                classifierName,
+                "Class Buggy",
+                Double.toString(eval.numTruePositives(0)), Double.toString(eval.numFalsePositives(0)),
+                Double.toString(eval.numTrueNegatives(0)), Double.toString(eval.numFalseNegatives(0)),
+                Double.toString(eval.precision(0)),
+                Double.toString(eval.recall(0)),
+                Double.toString(eval.areaUnderROC(0)),
+                Double.toString(eval.fMeasure(0)),
+                Double.toString(eval.matthewsCorrelationCoefficient(0)),
+                Double.toString(eval.kappa())};
+        writer.writeNext(classBuggy);
     }
 
     private Classifier getClassifier(String classifierName) {

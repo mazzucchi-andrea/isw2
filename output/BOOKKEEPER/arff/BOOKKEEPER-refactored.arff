@@ -1,0 +1,19 @@
+@relation Refactored_BOOKKEEPER
+
+@attribute nAuth numeric
+@attribute methodHistories numeric
+@attribute loc numeric
+@attribute fanin numeric
+@attribute fanout numeric
+@attribute wmc numeric
+@attribute returns numeric
+@attribute loops numeric
+@attribute comparison numeric
+@attribute maxNested numeric
+@attribute math numeric
+@attribute smells numeric
+@attribute buggy {yes,no}
+
+@data
+"4","4","129","0","2","28","1","0","4","3","13","42","yes"
+"4","4","30","0","6","5","1","0","0","1","0","15","yes"

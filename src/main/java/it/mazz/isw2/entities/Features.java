@@ -7,8 +7,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class Features {
-    private final Integer versionIncremental;
-    private final String versionName;
+    private Integer versionIncremental;
+    private String versionName;
     private final String methodName;
     private String qualifiedMethodName;
     private Set<String> methodInvocations;
@@ -73,6 +73,28 @@ public class Features {
         this.buggy = !line[16].equals("no");
     }
 
+    public Features(String fileName, CKMethodResult ckMethodResult) {
+        this.fileName = fileName;
+        if (ckMethodResult.getMethodName().indexOf('/') != -1) {
+            this.methodName = ckMethodResult.getMethodName().substring(0, ckMethodResult.getMethodName().indexOf('/'));
+        } else {
+            this.methodName = ckMethodResult.getMethodName();
+        }
+        this.qualifiedMethodName = ckMethodResult.getQualifiedMethodName();
+        this.methodInvocations = ckMethodResult.getMethodInvocations();
+        this.loc = ckMethodResult.getLoc();
+        this.fain = ckMethodResult.getFanin();
+        this.fanout = ckMethodResult.getFanout();
+        this.wmc = ckMethodResult.getWmc();
+        this.returns = ckMethodResult.getReturnQty();
+        this.loops = ckMethodResult.getLoopQty();
+        this.comparison = ckMethodResult.getComparisonsQty();
+        this.maxNested = ckMethodResult.getMaxNestedBlocks();
+        this.math = ckMethodResult.getMathOperationsQty();
+        this.smells = 0;
+        this.buggy = false;
+    }
+
     public String getMethodName() {
         return methodName;
     }
@@ -87,6 +109,10 @@ public class Features {
 
     public void addAuthor(PersonIdent author) {
         authors.add(author);
+    }
+
+    public int getAuthorSize() {
+        return authors.size();
     }
 
     public Integer getMethodHistories() {
