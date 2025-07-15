@@ -49,6 +49,7 @@ public class ModifiedDatasetsAnalysis {
         File analysisResults = new File(String.format("./output/%s/%s-datasets-results.csv", projName, projName));
         try (CSVWriter writer = new CSVWriter(new FileWriter(analysisResults))) {
             writer.writeNext(header.split(","));
+            evalDataset(datasetAPath, classifier, "A", writer);
             evalDataset(datasetBPath, classifier, "B", writer);
             evalDataset(datasetBplusPath, classifier, "B+", writer);
             evalDataset(datasetCPath, classifier, "C", writer);
